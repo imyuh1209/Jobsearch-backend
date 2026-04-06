@@ -199,12 +199,16 @@ public class JobController {
                 jakarta.persistence.criteria.Predicate byLocation = cb.like(cb.lower(root.get("location")), "%" + term + "%");
                 jakarta.persistence.criteria.Predicate byCompanyName = cb.like(cb.lower(companyJoin.get("name")), "%" + term + "%");
                 
-                // Nếu detect được level, thêm điều kiện level vào
+                // [FIX] Kết hợp tìm kiếm từ khóa VỚI Level thay vì ghi đè hoàn toàn
+                jakarta.persistence.criteria.Predicate keywordPredicate = cb.or(byJobName, byLocation, byCompanyName);
                 if (finalDetectedLevel != null) {
-                    predicates.add(cb.equal(root.get("level"), finalDetectedLevel));
+                    predicates.add(cb.and(keywordPredicate, cb.equal(root.get("level"), finalDetectedLevel)));
                 } else {
-                    predicates.add(cb.or(byJobName, byLocation, byCompanyName));
+                    predicates.add(keywordPredicate);
                 }
+            } else if (finalDetectedLevel != null) {
+                // Nếu chỉ có level (term rỗng)
+                predicates.add(cb.equal(root.get("level"), finalDetectedLevel));
             }
 
             // Điều kiện theo category (nếu UI dùng category thay cho q)
@@ -233,16 +237,25 @@ public class JobController {
                 predicates.add(cb.lessThanOrEqualTo(minExpr, finalMaxSalaryRaw));
             }
 
-            // [PRIORITY 1] Fix lỗi không xóa kết quả cũ khi tìm kiếm rỗng
-            if (finalTermRaw != null && finalTermRaw.trim().isEmpty() && predicates.isEmpty()) {
-                // Trả về kết quả rỗng nếu search rỗng
-                // predicates.add(cb.disjunction());
+            // [FIX] Nếu có truyền tham số tìm kiếm nhưng không tạo được predicate nào hoặc không có kết quả 1=1
+            // Tránh việc mặc định trả về tất cả khi người dùng gõ rác/kí tự đặc biệt không khớp
+            if (finalTermRaw != null && !finalTermRaw.trim().isEmpty()) {
+                // Kiểm tra xem term có chứa ít nhất 1 ký tự chữ hoặc số không
+                boolean hasContent = finalTermRaw.matches(".*[\\p{L}\\d].*");
+                if (!hasContent || predicates.isEmpty()) {
+                     return cb.disjunction(); // Trả về 1=0 (False)
+                }
+            } else if (finalLocationRaw != null && !finalLocationRaw.trim().isEmpty()) {
+                if (predicates.isEmpty()) {
+                     return cb.disjunction();
+                }
             }
 
             if (predicates.isEmpty()) {
                 return cb.conjunction();
             }
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+
         };
 
         // [API] Xử lý tham số Page & Size: Đảm bảo UI 1-based -> BE 0-based

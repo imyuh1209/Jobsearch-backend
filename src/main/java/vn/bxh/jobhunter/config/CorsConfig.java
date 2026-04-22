@@ -30,7 +30,8 @@ public class CorsConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "http://10.0.2.2:*",
-                "http://192.168.*:*"
+                "http://192.168.*:*",
+                "https://*.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "X-Refresh-Token"));

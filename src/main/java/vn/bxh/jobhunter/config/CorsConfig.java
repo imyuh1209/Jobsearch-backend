@@ -20,9 +20,10 @@ public class CorsConfig {
                 "http://localhost:4173",
                 "http://localhost:5173",
                 "http://localhost:5174",
-                // Bổ sung explicit các origin preview/web như yêu cầu
                 "http://localhost:8080",
-                "http://localhost:53012"
+                "http://localhost:53012",
+                "https://job-search-bay-sigma.vercel.app", // Domain Vercel
+                "https://huytruong.io.vn" // Domain chính
         ));
         // Mở rộng cho emulator/dev thiết bị thật (Android/iOS, LAN)
         configuration.setAllowedOriginPatterns(Arrays.asList(
